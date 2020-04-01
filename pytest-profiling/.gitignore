@@ -1,2 +1,3 @@
 .venv
 prof
+__pycache__/
