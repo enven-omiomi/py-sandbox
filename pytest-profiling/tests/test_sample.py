@@ -21,8 +21,10 @@ def test_1_2(expected):
 def test_1_3(expected):
   def total(n):
     if n < 1:
+      return []
+    if n < 999:
       return [i for i in range(1, n)]
-    return total(n - 100) + [i for i in range(n - 99, n)]
+    return total(n - 1000) + [i for i in range(n - 999, n)]
   actual = total(100000)
   assert expected == actual
 
