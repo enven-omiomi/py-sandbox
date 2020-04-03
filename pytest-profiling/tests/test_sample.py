@@ -9,6 +9,11 @@ COUNT = 10000000
 def expected():
   return [i for i in range(1, COUNT)]
 
+@pytest.fixture(scope='function', autouse=True)
+def setup():
+  time.sleep(0.1)
+  yield
+  time.sleep(0.2)
 
 def test_1_1(expected):
   actual = [i for i in range(1, COUNT)]
