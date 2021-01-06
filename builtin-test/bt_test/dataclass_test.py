@@ -43,12 +43,14 @@ class FrozenPerson():
 # field()の自作と__getattribute__の改造
 
 import uuid
+from functools import wraps
 
 def personal_info(**kwargs):
     return field(**kwargs, metadata={'personal_info': True})
 
 def persondataclass(clazz):
-    def wrap(clazz):
+    @wraps(clazz)
+    def wrap(*args, **kwargs):
         def _get_attribute(self, name: str) -> Any:
             # 再帰を防ぐためにobjectのgetattributeを使う
             dc_fields: dict = object.__getattribute__(
@@ -76,10 +78,6 @@ class CustomPerson():
 
 
 if __name__ == '__main__':
-    foo = Foo('fuu', 'bar')
-    print(foo.foo)
-    print(foo.bar)
-
     print('\n---------\n')
 
     taro = CustomPerson('taro', 'tanaka', 20)
