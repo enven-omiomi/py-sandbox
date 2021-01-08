@@ -1,4 +1,5 @@
-from dataclasses import Field, dataclass, field, InitVar, fields
+from abc import ABCMeta
+from dataclasses import Field, dataclass, field, InitVar, fields, is_dataclass
 from typing import Any
 
 @dataclass()
@@ -76,12 +77,102 @@ class CustomPerson():
 
 # -----------------------------------------------------------------
 
+class DataclassMeta(metaclass=ABCMeta):
+    bar: str = ''
+
+    def __new__(cls, *args, **kwargs):
+        dataclass(cls)
+        return super().__new__(cls)
+
+class DataclassImpl(DataclassMeta):
+    foo: str = ''
+    ### ↓を定義していると2回目以降のDataclassImplインスタンス生成時にエラーになる
+    ### DataclassMetaの方で__new__の中で"if not is_dataclass(cls)"などして
+    ### 2回以上dataclassが呼び出されないようにする必要がある
+    # lis: list = field(default_factory=list)
+
+@dataclass
+class DataclassMeta2(metaclass=ABCMeta):
+    bar: str = ''
+
+class DataclassImpl2(DataclassMeta2):
+    foo: str = ''
+
+@dataclass
+class DataclassMeta3(metaclass=ABCMeta):
+    bar: str = ''
+
+    def __new__(cls, *args, **kwargs):
+        dataclass(cls)
+        return super().__new__(cls)
+class DataclassImpl3(DataclassMeta3):
+    foo: str = ''
+
+@dataclass
+class DataclassSuper:
+    bar: str = ''
+
+    def __new__(cls):
+        print('super 1: %s', cls.__name__)
+        setattr(cls, '__test_attr__', ['super1'])
+        print(object.__getattribute__(cls, '__test_attr__'))
+        return super().__new__(cls)
+
+class DataclassImpl4(DataclassSuper):
+    foo: str = ''
+    def __new__(cls):
+        print('super 2: %s', cls.__name__)
+        setattr(cls, '__test_attr__', ['super2'])
+        print(object.__getattribute__(cls, '__test_attr__'))
+        return super().__new__(cls)
+
+class DataclassImpl5(DataclassImpl4):
+    foo: str = ''
+    def __new__(cls):
+        print('super 3: %s', cls.__name__)
+        # print(object.__getattribute__(cls, '__test_attr__'))
+        return super().__new__(cls)
+
+    def func_a(str):
+        return None
+
+# -----------------------------------------------------------------
 
 if __name__ == '__main__':
-    print('\n---------\n')
 
     taro = CustomPerson('taro', 'tanaka', 20)
     print(taro.first_name)
     print(taro.last_name)
     print(taro.age)
     print(taro.personal_id)
+
+    print('\n---------\n')
+
+    dc_impl = DataclassImpl()
+    print(dc_impl)
+    print(is_dataclass(dc_impl))
+    print(DataclassImpl(foo='fu'))
+
+    print('\n---------\n')
+
+    dc_impl_2 = DataclassImpl2()
+    print(dc_impl_2)
+    print(is_dataclass(dc_impl_2))
+    print(DataclassImpl2(bar='ba'))
+
+    print('\n---------\n')
+
+    dc_impl_3 = DataclassImpl3()
+    print(dc_impl_3)
+    print(is_dataclass(dc_impl_3))
+    print(DataclassImpl3(bar='ba', foo='fu'))
+
+    print('\n---------\n')
+
+    dc_impl_4 = DataclassImpl4()
+    print(dc_impl_4)
+    print(is_dataclass(dc_impl_4))
+    dc_impl_5 = DataclassImpl5()
+    print(dc_impl_5)
+    print(is_dataclass(dc_impl_5))
+    print(dc_impl_5.func_a.__dict__)
