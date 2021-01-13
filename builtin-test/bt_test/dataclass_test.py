@@ -81,7 +81,15 @@ class DataclassMeta(metaclass=ABCMeta):
     bar: str = ''
 
     def __new__(cls, *args, **kwargs):
+        print('## print(cls)')
+        print(cls)
+        print('## print(dir(cls))')
+        print(dir(cls))
+        print('## print(cls.__dict__)')
+        print(cls.__dict__)
         dataclass(cls)
+        print('## print(cls.__dict__) (dataclass)')
+        print(cls.__dict__)
         return super().__new__(cls)
 
 class DataclassImpl(DataclassMeta):
@@ -98,22 +106,62 @@ class DataclassMeta2(metaclass=ABCMeta):
 class DataclassImpl2(DataclassMeta2):
     foo: str = ''
 
-@dataclass
+
+# -------------------------
+
+def deco(cls):
+    def wrap(cls):
+        print('#++ print(cls)')
+        print(cls)
+        print('#++ print(cls.__dict__)')
+        print(cls.__dict__)
+        dataclass(cls)
+        print('#++ print(cls.__dict__) (dataclass)')
+        print(cls.__dict__)
+        print('#++ print(cls.__dataclass_fields__) (dataclass)')
+        print(cls.__dataclass_fields__)
+        return cls
+
+    return wrap(cls)
+
+@deco
 class DataclassMeta3(metaclass=ABCMeta):
     bar: str = ''
 
     def __new__(cls, *args, **kwargs):
+        print('## print(cls)')
+        print(cls)
+        print('## print(cls.__dict__)')
+        print(cls.__dict__)
         dataclass(cls)
-        return super().__new__(cls)
+        print('## print(cls.__dict__) (dataclass)')
+        print(cls.__dict__)
+        print('++ print(cls.__dataclass_fields__) (dataclass)')
+        print(cls.__dataclass_fields__)
+        self = super().__new__(cls)
+        print('## print(self.__dict__)')
+        print(self)
+        print(dir(self))
+        print(self.__dict__)
+        return self
 class DataclassImpl3(DataclassMeta3):
+
     foo: str = ''
+
+    # def __new__(cls, *args, **kwargs):
+    #     print('impl3 new')
+
+    # def __init__(self, *args, **kwargs):
+    #     print('impl3 init')
+
+# -------------------------
 
 @dataclass
 class DataclassSuper:
     bar: str = ''
 
     def __new__(cls):
-        print('super 1: %s', cls.__name__)
+        print('super 1: %s' % cls.__name__)
         setattr(cls, '__test_attr__', ['super1'])
         print(object.__getattribute__(cls, '__test_attr__'))
         return super().__new__(cls)
@@ -121,20 +169,47 @@ class DataclassSuper:
 class DataclassImpl4(DataclassSuper):
     foo: str = ''
     def __new__(cls):
-        print('super 2: %s', cls.__name__)
+        print('super 2: %s' % cls.__name__)
         setattr(cls, '__test_attr__', ['super2'])
         print(object.__getattribute__(cls, '__test_attr__'))
         return super().__new__(cls)
 
+    def __init__(self):
+        print('super2 init')
+
 class DataclassImpl5(DataclassImpl4):
     foo: str = ''
     def __new__(cls):
-        print('super 3: %s', cls.__name__)
+        print('concrete: %s' % cls.__name__)
         # print(object.__getattribute__(cls, '__test_attr__'))
         return super().__new__(cls)
 
+    def __init__(self):
+        print('concrete init')
+
     def func_a(str):
         return None
+
+# 最終系
+
+@dataclass
+class SuperClass(metaclass=ABCMeta):
+    bar: str = ''
+
+    def __new__(cls, *args, **kwargs):
+        print('----------')
+        if hasattr(cls, '__dataclass_fields__'):
+            fields_ = cls.__dataclass_fields__  # barの情報のみ
+            annotations_ = cls.__dict__.get('__annotations__', {})  # barの型情報
+            if all(f not in fields_.keys() for f in annotations_.keys()):
+                dataclass(cls)
+            print(cls.__dataclass_fields__)
+        print('----------')
+        return super().__new__(cls)
+
+class SubClass(SuperClass):
+    foo: str = ''
+    lis: list = field(default_factory=list)
 
 # -----------------------------------------------------------------
 
@@ -165,14 +240,14 @@ if __name__ == '__main__':
     dc_impl_3 = DataclassImpl3()
     print(dc_impl_3)
     print(is_dataclass(dc_impl_3))
-    print(DataclassImpl3(bar='ba', foo='fu'))
+    # print(DataclassImpl3(bar='ba', foo='fu'))
 
     print('\n---------\n')
 
     dc_impl_4 = DataclassImpl4()
     print(dc_impl_4)
     print(is_dataclass(dc_impl_4))
+    print('---')
     dc_impl_5 = DataclassImpl5()
     print(dc_impl_5)
     print(is_dataclass(dc_impl_5))
-    print(dc_impl_5.func_a.__dict__)
